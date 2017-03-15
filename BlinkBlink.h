@@ -2,6 +2,9 @@
 #define BLINKBLINK_H
 
 #define DEBUG 1
+#define DEBUG_CH 7
+
+#define MAX_EVENTS 100
 
 #define OUTPUTS 8
 

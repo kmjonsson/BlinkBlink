@@ -49,27 +49,50 @@ void setup() {
     pinMode(pins[i], OUTPUT);
     memcpy(&curr_events[i],&blank,sizeof(event));
   }
-  pinMode(RC1PIN,INPUT);
-  //attachInterrupt(RC1PIN, rc1Calc, CHANGE);
+  pinMode(RC1PIN,INPUT);  
   attachPCINT(digitalPinToPCINT(RC1PIN), rc1Calc, CHANGE);
+  delay(500);
 }
 
 void next_event(int i) {
-  static uint16_t curr_event[OUTPUTS] = { -1, -1, -1, -1, -1, -1, -1, -1 };
+  static int16_t curr_event[OUTPUTS] = { -2, -2, -2, -2, -2, -2, -2, -2 };
 
   uint16_t rc1 = v_rc1;
   uint16_t rc2 = v_rc1;
+
+  if(curr_event[i] == -2) {
+    if(DEBUG && i == DEBUG_CH) { Serial.println("INIT"); }
+    int j;
+    for(int j=0;j<MAX_EVENTS;j++) {
+      if(events[i][j].flags == EOE) {
+        curr_event[i] = j-1;
+        break;
+      }
+    }
+    if(j == MAX_EVENTS) {
+      if(DEBUG && i == DEBUG_CH) { Serial.print("ERROR: Ch"); Serial.print(i); Serial.println(" has no EOE"); }
+      curr_event[i] = -1;
+      memcpy(&curr_events[i],&blank,sizeof(event));
+      return;
+    }
+    if(DEBUG && i == DEBUG_CH) { Serial.println("INIT DONE"); }
+  }
 
   while(1) {
     // Next event
     curr_event[i]++;
 
-    
+    if(curr_event[i] >= MAX_EVENTS) {
+      if(DEBUG && i == DEBUG_CH) { Serial.print("ERROR: Ch"); Serial.print(i); Serial.println(" has no EOE"); }
+      memcpy(&curr_events[i],&blank,sizeof(event));
+      return;
+    }   
   
     // End of events
     if(events[i][curr_event[i]].flags == EOE) {
-      curr_event[i] = 0;
-      break;
+      if(DEBUG && i == DEBUG_CH) { Serial.print("EOE - "); Serial.print(curr_event[i]); Serial.println(""); }
+      curr_event[i] = -1;
+      return;
     }
     
     if((events[i][curr_event[i]].flags & RC1_HIGH) == RC1_HIGH && !IS_RC_HIGH(rc1)) { continue; }
@@ -82,7 +105,7 @@ void next_event(int i) {
   }
   // Copy next event
   memcpy(&curr_events[i],&events[i][curr_event[i]],sizeof(event));
-  if(DEBUG) {
+  if(DEBUG && i == DEBUG_CH) {
     Serial.print(i);
     Serial.print(" - ");
     Serial.print(curr_event[i]);
@@ -92,7 +115,7 @@ void next_event(int i) {
   }
   // If NO_RC do:
   if(curr_events[i].flags != EOE) {
-    if(DEBUG) { Serial.println(curr_events[i].level); }
+    if(DEBUG && i == DEBUG_CH) { Serial.println(curr_events[i].level); }
     analogWrite(pins[i],map(curr_events[i].level,0,100,0,255));
     //if(curr_events[i].level == ON) { digitalWrite(pins[i],HIGH); }
     //if(curr_events[i].level == OFF) { digitalWrite(pins[i],LOW); }
