@@ -1,7 +1,11 @@
 #ifndef BLINKBLINK_H
 #define BLINKBLINK_H
 
-#define DEBUG 1
+#define RCPIN A1
+
+#define INIT_MSG "BlinkBlink v0.3 ? = help, d = dump"
+
+#define DEBUG 0
 #define DEBUG_CH 7
 
 #define MAX_EVENTS 100
@@ -13,13 +17,10 @@
 
 #define NONE     0x0000
 
-#define RC1_LOW  0x0001
-#define RC1_MID  0x0002
-#define RC1_HIGH 0x0004
-
-#define RC2_LOW  0x0008
-#define RC2_MID  0x0010
-#define RC2_HIGH 0x0020
+#define RC_LOW  0x0001
+#define RC_MID  0x0002
+#define RC_HIGH 0x0004
+#define RC_NA   0x0008
 
 #define EOE     0xFFFF
 
@@ -42,6 +43,7 @@ uint8_t pins[OUTPUTS] = { 3,5,6,9,10,11,12,13 };
 
 #define IS_RC_HIGH(x) ((x) >= RCMID+RCOFFSET)
 #define IS_RC_MID(x) ((x) > RCMID-RCOFFSET && (x) < RCMID+RCOFFSET)
-#define IS_RC_LOW(x) ((x) < RCMID-RCOFFSET)
+#define IS_RC_LOW(x) ((x) < RCMID-RCOFFSET && (x) > 0)
+#define IS_RC_NA(x) ((x) == 0)
 
 #endif

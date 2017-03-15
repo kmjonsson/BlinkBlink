@@ -1,14 +1,17 @@
 #ifndef BLINKBLINKSEQ_H
 #define BLINKBLINKSEQ_H
 
+
+
 /*
  * Event:
  *      Tid (i ms)
- *      Nivå (0-100%), ON, OFF
+ *      Nivå (0-255), ON, OFF
  *      Flaggor:  NONE     = Inget speciellt
- *                RC1_LOW  = om RC1-ingång låg kör detta event.
- *                RC1_MID  = om RC1-ingång mellan kör detta event.
- *                RC1_HIGH = om RC1-ingång Hög kör detta event.
+ *                RC_LOW  = om RC-ingång låg kör detta event.
+ *                RC_MID  = om RC-ingång mellan kör detta event.
+ *                RC_HIGH = om RC-ingång Hög kör detta event.
+ *                RC_NA   = om RC-ingång signal saknas kör detta event.
  *                EOE      = Slut på serie.
  *                
  * ch1 - ch6 -- har möjlighet att sätta nivå. 
@@ -78,14 +81,27 @@ event ch7event[] = {
 };
 
 event ch8event[] = {
-    { 500,  ON,  RC1_LOW },
-    { 501,  ON,  RC1_LOW },
-    { 502,  ON,  RC1_LOW },
-    { 503,  ON,  RC1_LOW },
-    { 104,   ON,  RC1_MID },
-    { 105,   OFF,  RC1_MID },
-    { 1006,  OFF,  RC1_HIGH },
+    { 500,  ON,  RC_LOW },
+    { 501,  ON,  RC_LOW },
+    { 502,  ON,  RC_LOW },
+    { 503,  ON,  RC_LOW },
+    { 104,   ON,  RC_MID },
+    { 105,   OFF,  RC_MID },
+    { 1006,  OFF,  RC_HIGH },
+    { 250,  ON,  RC_NA },
+    { 251,  OFF,  RC_NA },
     { 0   , OFF, EOE },
+};
+
+event *events[OUTPUTS] = {
+  ch1event,
+  ch2event,
+  ch3event,
+  ch4event,
+  ch5event,
+  ch6event,
+  ch7event,
+  ch8event
 };
 
 #endif

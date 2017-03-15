@@ -3,39 +3,27 @@
 #include "BlinkBlink.h"
 #include "BlinkBlinkSeq.h"
 
-event *events[OUTPUTS] = {
-  ch1event,
-  ch2event,
-  ch3event,
-  ch4event,
-  ch5event,
-  ch6event,
-  ch7event,
-  ch8event
-};
-
 // Code...
 
-#define RC1PIN A1
+volatile unsigned long rcstamp=0;
+volatile uint16_t v_rc=0;
 
-volatile unsigned long rc1stamp=0;
-volatile uint16_t v_rc1=0;
-
-void rc1Check() {
+void rcCheck() {
   unsigned long m = micros();
-  if(m - rc1stamp > 100000) {
-    v_rc1=0;
+  if(m - rcstamp > 100000) {
+    v_rc=0;
   }  
 }
-void rc1Calc() {
+
+void rcCalc() {
   unsigned long m = micros();
-  if(digitalRead(RC1PIN)) {
-    rc1stamp = m;
+  if(digitalRead(RCPIN)) {
+    rcstamp = m;
   } else {
-    if(m - rc1stamp > 2500 || m-rc1stamp < 900) {
-      v_rc1=0;
+    if(m - rcstamp > 2500 || m-rcstamp < 900) {
+      v_rc=0;
     } else {
-      v_rc1 = m-rc1stamp;
+      v_rc = m-rcstamp;
     }
   }
 }
@@ -44,21 +32,20 @@ event curr_events[OUTPUTS];
 
 void setup() {
   Serial.begin(57600);
-  Serial.println("BlinkBlink");
+  Serial.println(INIT_MSG);
   for(int i=0;i<OUTPUTS;i++) {
     pinMode(pins[i], OUTPUT);
     memcpy(&curr_events[i],&blank,sizeof(event));
   }
-  pinMode(RC1PIN,INPUT);  
-  attachPCINT(digitalPinToPCINT(RC1PIN), rc1Calc, CHANGE);
+  pinMode(RCPIN,INPUT);  
+  attachPCINT(digitalPinToPCINT(RCPIN), rcCalc, CHANGE);
   delay(500);
 }
 
 void next_event(int i) {
   static int16_t curr_event[OUTPUTS] = { -2, -2, -2, -2, -2, -2, -2, -2 };
 
-  uint16_t rc1 = v_rc1;
-  uint16_t rc2 = v_rc1;
+  uint16_t rc = v_rc;
 
   if(curr_event[i] == -2) {
     if(DEBUG && i == DEBUG_CH) { Serial.println("INIT"); }
@@ -94,13 +81,12 @@ void next_event(int i) {
       curr_event[i] = -1;
       return;
     }
+
     
-    if((events[i][curr_event[i]].flags & RC1_HIGH) == RC1_HIGH && !IS_RC_HIGH(rc1)) { continue; }
-    if((events[i][curr_event[i]].flags & RC1_MID)  == RC1_MID  && !IS_RC_MID(rc1))  { continue; }
-    if((events[i][curr_event[i]].flags & RC1_LOW)  == RC1_LOW  && !IS_RC_LOW(rc1))  { continue; }
-    if((events[i][curr_event[i]].flags & RC2_HIGH) == RC2_HIGH && !IS_RC_HIGH(rc2)) { continue; }
-    if((events[i][curr_event[i]].flags & RC2_MID)  == RC2_MID  && !IS_RC_MID(rc2))  { continue; }
-    if((events[i][curr_event[i]].flags & RC2_LOW)  == RC2_LOW  && !IS_RC_LOW(rc2))  { continue; }
+    if((events[i][curr_event[i]].flags & RC_HIGH) == RC_HIGH && !IS_RC_HIGH(rc)) { continue; }
+    if((events[i][curr_event[i]].flags & RC_MID)  == RC_MID  && !IS_RC_MID(rc))  { continue; }
+    if((events[i][curr_event[i]].flags & RC_LOW)  == RC_LOW  && !IS_RC_LOW(rc))  { continue; }
+    if((events[i][curr_event[i]].flags & RC_NA)   == RC_NA   && !IS_RC_NA(rc))   { continue; }
     break;
   }
   // Copy next event
@@ -116,29 +102,69 @@ void next_event(int i) {
   // If NO_RC do:
   if(curr_events[i].flags != EOE) {
     if(DEBUG && i == DEBUG_CH) { Serial.println(curr_events[i].level); }
-    analogWrite(pins[i],map(curr_events[i].level,0,100,0,255));
+    analogWrite(pins[i],map(curr_events[i].level,OFF,ON,0,255));
     //if(curr_events[i].level == ON) { digitalWrite(pins[i],HIGH); }
     //if(curr_events[i].level == OFF) { digitalWrite(pins[i],LOW); }
   }
 }
 
-void loop() {
+void dumpCfg(void) {
+  Serial.print("// OUTPUTS = "); Serial.println(OUTPUTS);
 
-/*
-  rc1Check();
-  Serial.println(v_rc1);
-  Serial.println(IS_RC_HIGH(v_rc1));
-  Serial.println(IS_RC_MID(v_rc1));
-  Serial.println(IS_RC_LOW(v_rc1));
-  delay(300);
-  return;
-*/
+  for(int i=0;i<OUTPUTS;i++) {    
+    Serial.print("event ch"); Serial.print(i+1); Serial.println("event[] = {");
+    for(int j=0;events[i][j].flags != EOE;j++) {
+      Serial.print("    { "); Serial.print(events[i][j].ms); Serial.print(", ");
+      if(events[i][j].level == OFF) {
+        Serial.print("OFF");
+      } 
+      if(events[i][j].level == ON) {
+        Serial.print("ON");
+      } 
+      if(events[i][j].level != ON && events[i][j].level != OFF) {
+        Serial.print(events[i][j].level);        
+      } 
+      Serial.print(", ");
+      char p = 0;
+      if(events[i][j].flags == NONE) {
+        Serial.print("NONE");
+        p = 1;
+      }
+      if(events[i][j].flags & RC_HIGH) {
+        if(p) Serial.print("|");
+        Serial.print("RC_HIGH");       
+      }
+      if(events[i][j].flags & RC_MID) {
+        if(p) Serial.print("|");
+        Serial.print("RC_MID");       
+      }
+      if(events[i][j].flags & RC_LOW) {
+        if(p) Serial.print("|");
+        Serial.print("RC_LOW");       
+      }
+      if(events[i][j].flags & RC_NA) {
+        if(p) Serial.print("|");
+        Serial.print("RC_NA");       
+      }
+      Serial.println("},");      
+    }
+    Serial.println("    { 0   , OFF, EOE },\n};");
+  }
+  Serial.println("");
+  Serial.println("event *events[OUTPUTS] = {");
+  for(int i=0;i<OUTPUTS;i++) {        
+    Serial.print("  ch"); Serial.print(i+1); Serial.println("event,");    
+  }
+  Serial.println("};");
+}
+
+void loop() {
   static unsigned long last_millis = 0;
   // Wait for next ms.
   while(last_millis == millis());
   last_millis = millis();
 
-  rc1Check();
+  rcCheck();
 
   // Loop the loop :-)
   for(int i=0;i<OUTPUTS;i++) {
@@ -148,6 +174,19 @@ void loop() {
     } else {
       // Countdown
       curr_events[i].ms--;
+    }
+  }
+  
+  // Serial receiver.
+  if(Serial.available()) {
+    char c = Serial.read();
+    // Print init/help msg.
+    if(c == '?') {
+      Serial.println(INIT_MSG);
+    }
+    // Dump the config
+    if(c == 'd') {
+      dumpCfg();
     }
   }
 }
