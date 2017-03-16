@@ -1,3 +1,5 @@
+#include <avr/wdt.h>
+
 #include "PinChangeInterrupt.h"
 
 #include "BlinkBlink.h"
@@ -40,6 +42,7 @@ void setup() {
   pinMode(RCPIN,INPUT);  
   attachPCINT(digitalPinToPCINT(RCPIN), rcCalc, CHANGE);
   delay(500);
+  wdt_enable(WDTO_2S);
 }
 
 void next_event(int i) {
@@ -161,7 +164,7 @@ void dumpCfg(void) {
 void loop() {
   static unsigned long last_millis = 0;
   // Wait for next ms.
-  while(last_millis == millis());
+  while(last_millis == millis()) { wdt_reset(); }
   last_millis = millis();
 
   rcCheck();
