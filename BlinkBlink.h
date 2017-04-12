@@ -3,7 +3,11 @@
 
 #define V5
 
+#ifdef V5
 #define RCPIN A0
+#else
+#define RCPIN A1
+#endif
 
 #define INIT_MSG "BlinkBlink v0.3 ? = help, d = dump"
 
