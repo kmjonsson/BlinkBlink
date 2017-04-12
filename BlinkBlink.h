@@ -1,7 +1,9 @@
 #ifndef BLINKBLINK_H
 #define BLINKBLINK_H
 
-#define RCPIN A1
+#define V5
+
+#define RCPIN A0
 
 #define INIT_MSG "BlinkBlink v0.3 ? = help, d = dump"
 
@@ -12,7 +14,7 @@
 
 #define OUTPUTS 8
 
-#define ON      100
+#define ON      255
 #define OFF     0
 
 #define NONE     0x0000

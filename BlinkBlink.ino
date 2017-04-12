@@ -14,12 +14,16 @@ void rcCheck() {
   unsigned long m = micros();
   if(m - rcstamp > 100000) {
     v_rc=0;
-  }  
+  }
 }
 
 void rcCalc() {
   unsigned long m = micros();
+#ifdef V5
+  if(!digitalRead(RCPIN)) {
+#else
   if(digitalRead(RCPIN)) {
+#endif
     rcstamp = m;
   } else {
     if(m - rcstamp > 2500 || m-rcstamp < 900) {
@@ -39,7 +43,7 @@ void setup() {
     pinMode(pins[i], OUTPUT);
     memcpy(&curr_events[i],&blank,sizeof(event));
   }
-  pinMode(RCPIN,INPUT);  
+  pinMode(RCPIN,INPUT);
   attachPCINT(digitalPinToPCINT(RCPIN), rcCalc, CHANGE);
   delay(500);
   wdt_enable(WDTO_2S);
