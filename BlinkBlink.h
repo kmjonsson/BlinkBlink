@@ -1,6 +1,9 @@
 #ifndef BLINKBLINK_H
 #define BLINKBLINK_H
 
+// Uncomment this for use with version #1
+//#define V1
+// Uncomment this for use with version #5
 #define V5
 
 #ifdef V5
@@ -42,7 +45,11 @@ event blank[] = {
   { 0, OFF, EOE }
 };
 
+#ifdef V5
+uint8_t pins[OUTPUTS] = { 9,6,5,3,10,11,12,13 };
+#else
 uint8_t pins[OUTPUTS] = { 3,5,6,9,10,11,12,13 };
+#endif
 
 #define RCMID 1500
 #define RCOFFSET 300
